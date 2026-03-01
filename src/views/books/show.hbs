@@ -1,0 +1,19 @@
+<section class="details-card">
+  <h2>{{book.title}}</h2>
+
+  <ul>
+    <li><strong>ID:</strong> {{book.id}}</li>
+    <li><strong>Autor:</strong> {{book.author}}</li>
+    <li><strong>Gênero:</strong> {{book.genre}}</li>
+    <li><strong>Preço:</strong> {{currency book.price}}</li>
+    <li><strong>Estoque:</strong> {{book.stock}}</li>
+  </ul>
+
+  <div class="actions">
+    <a class="button" href="/livros/{{book.id}}/editar">Editar</a>
+    <a href="/livros">Voltar</a>
+    <form class="inline" action="/livros/{{book.id}}?_method=DELETE" method="POST">
+      <button type="submit">Excluir</button>
+    </form>
+  </div>
+</section>
