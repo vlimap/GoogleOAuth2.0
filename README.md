@@ -1,179 +1,350 @@
-# Livraria Monolítica com Handlebars
+# Projeto didático Fullstack: React + Express + PostgreSQL + Firebase Google Auth
 
-Projeto monolítico de uma livraria fictícia com CRUD completo de livros, desenvolvido com **Node.js**, **Express** e **Handlebars**.
+Este repositório foi pensado para **aula/laboratório**: um exemplo simples, porém completo, de autenticação com Google no frontend e validação segura do token no backend.
 
-## Dados fictícios do projeto
+## Objetivo pedagógico
 
-- **Nome da empresa:** Universo dos Livros Livraria Ltda.
-- **Site:** https://www.seudominio.tech
-- **E-mail:** contato@seudominio.tech
-- **Telefone:** +55 (11) 3000-1234
-- **Endereço:** Rua dos Autores, 321 - São Paulo/SP
+Ao final do setup, o aluno consegue:
+- autenticar com Google usando Firebase no frontend;
+- enviar o `idToken` para o backend;
+- validar token com Firebase Admin SDK;
+- criar/atualizar usuário no PostgreSQL via Sequelize;
+- entender a diferença entre **credenciais do app web** (frontend) e **Service Account** (backend).
 
-## Objetivo
+---
 
-Disponibilizar um sistema web simples para:
+## Stack usada
 
-- Listar livros
-- Cadastrar novos livros
-- Visualizar detalhes de um livro
-- Editar livro
-- Excluir livro
+- **Frontend:** React + Vite
+- **Backend:** Node.js + Express
+- **Banco:** PostgreSQL
+- **ORM:** Sequelize (`define`) + migrations
+- **Auth:** Firebase Authentication (Google Provider)
+- **Validação de token no server:** Firebase Admin SDK
 
-## Stack utilizada
+---
 
-- Node.js
-- Express
-- Express Handlebars
-- method-override
-- CSS puro
+## Estrutura de pastas
 
-## Estrutura do projeto
-
-```text
-src/
-  app.js
-  data/
-    books.store.js
-  routes/
-    books.routes.js
-  public/
-    styles.css
-  views/
-    layouts/main.hbs
-    books/index.hbs
-    books/form.hbs
-    books/show.hbs
-    404.hbs
+```bash
+handlesbar/
+├─ backend/
+│  ├─ config/
+│  │  └─ config.js
+│  ├─ migrations/
+│  │  └─ 20260302000100-create-users.js
+│  ├─ models/
+│  │  ├─ index.js
+│  │  └─ user.js
+│  └─ src/
+│     ├─ config/firebaseAdmin.js
+│     ├─ middleware/authMiddleware.js
+│     ├─ routes/authRoutes.js
+│     └─ server.js
+├─ frontend/
+│  ├─ src/
+│  │  ├─ services/api.js
+│  │  ├─ services/firebase.js
+│  │  └─ App.jsx
+│  └─ .env.example
+└─ README.md
 ```
 
-## Modelo de dados (em memória)
+---
 
-Os dados são mantidos em memória dentro de `src/data/books.store.js`.
+## Pré-requisitos
 
-Exemplo de objeto livro:
+- Node.js 20+
+- npm 10+
+- PostgreSQL instalado e rodando
+- Conta Google para login
+- Projeto Firebase criado
+
+---
+
+## Conceito importante: existem 2 tipos de credenciais
+
+### 1) Credenciais do App Web (frontend)
+Usadas no navegador em `frontend/.env`:
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+
+### 2) Credenciais da Service Account (backend)
+Usadas no servidor em `backend/.env`:
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+
+> As credenciais da Service Account vêm do arquivo JSON baixado em **Firebase > Project settings > Service accounts > Generate new private key**.
+
+---
+
+## Setup Firebase (passo a passo)
+
+## 1. Criar projeto no Firebase
+1. Acesse [https://console.firebase.google.com/](https://console.firebase.google.com/)
+2. Clique em **Add project** e finalize.
+
+## 2. Habilitar login Google
+1. Vá em **Authentication** > **Sign-in method**
+2. Ative o provider **Google**.
+
+## 3. Criar app Web (frontend)
+1. Na home do projeto, clique em **Add app** > **Web**
+2. Copie as credenciais exibidas no snippet.
+3. Use esses valores no arquivo `frontend/.env`.
+
+## 4. Baixar Service Account (backend)
+1. Vá em **Project settings** > **Service accounts**
+2. Clique em **Generate new private key**
+3. Salve o JSON em local seguro (não subir para o Git).
+
+### Mapeamento do JSON para `.env` do backend
+
+Se o JSON contém:
 
 ```json
 {
-  "id": 1,
-  "title": "Dom Casmurro",
-  "author": "Machado de Assis",
-  "genre": "Romance",
-  "price": 39.9,
-  "stock": 12,
-  "createdAt": "2026-03-01T20:00:00.000Z"
+  "project_id": "meu-projeto",
+  "client_email": "firebase-adminsdk-xxxx@meu-projeto.iam.gserviceaccount.com",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nABC...\n-----END PRIVATE KEY-----\n"
 }
 ```
 
-> Observação: por ser em memória, os dados são reiniciados a cada restart/deploy.
+Então no `backend/.env` fica:
 
-## Rotas principais
-
-- `GET /livros` → lista livros
-- `GET /livros/novo` → formulário de cadastro
-- `POST /livros` → cria livro
-- `GET /livros/:id` → detalhes do livro
-- `GET /livros/:id/editar` → formulário de edição
-- `PUT /livros/:id` → atualiza livro
-- `DELETE /livros/:id` → remove livro
-
-## Como executar localmente
-
-### 1) Pré-requisitos
-
-- Node.js 18+
-- npm 9+
-
-### 2) Instalar dependências
-
-```bash
-npm install
+```env
+FIREBASE_PROJECT_ID=meu-projeto
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxx@meu-projeto.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nABC...\n-----END PRIVATE KEY-----\n"
 ```
 
-### 3) Executar em desenvolvimento
+> Sim, são exatamente essas variáveis. A ideia é: você **não usa o JSON diretamente no código** neste projeto; você extrai os campos para variáveis de ambiente.
+
+---
+
+## Configuração do backend
+
+No diretório `backend`:
+
+## 1. Criar `.env`
+
+Linux/macOS:
+```bash
+cp .env.example .env
+```
+
+Windows PowerShell:
+```powershell
+Copy-Item .env.example .env
+```
+
+## 2. Preencher `backend/.env`
+
+```env
+PORT=3000
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=handlesbar_db
+DB_NAME_TEST=handlesbar_test_db
+DB_SSL=false
+
+# Service Account Firebase Admin SDK
+FIREBASE_PROJECT_ID=seu-projeto-firebase
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@seu-projeto.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nSUA_CHAVE_AQUI\n-----END PRIVATE KEY-----\n"
+```
+
+## 3. Criar banco no PostgreSQL
+
+```sql
+CREATE DATABASE handlesbar_db;
+CREATE DATABASE handlesbar_test_db;
+```
+
+## 4. Rodar migration
+
+```bash
+npm run db:migrate
+```
+
+Essa migration cria a tabela `users`.
+
+## 5. Subir backend
 
 ```bash
 npm run dev
 ```
 
-### 4) Executar em modo produção local
-
-```bash
-npm start
-```
-
-Aplicação disponível em `http://localhost:3000/livros`.
+Endpoints principais:
+- `GET /api/health`
+- `POST /api/auth/google`
+- `GET /api/auth/me`
 
 ---
 
-## Passo a passo correto para publicação na Vercel
+## Configuração do frontend
 
-### Opção A (recomendada): via GitHub
+No diretório `frontend`:
 
-1. Suba o projeto para um repositório no GitHub.
-2. Acesse https://vercel.com e clique em **Add New Project**.
-3. Importe o repositório.
-4. Em **Framework Preset**, selecione **Other**.
-5. Em **Build and Output Settings**, mantenha padrão (Node server).
-6. Clique em **Deploy**.
-7. Após o deploy, valide a URL gerada pela Vercel.
+## 1. Criar `.env`
 
-### Opção B: via CLI da Vercel
-
-1. Instale a CLI:
-
+Linux/macOS:
 ```bash
-npm i -g vercel
+cp .env.example .env
 ```
 
-2. Faça login:
-
-```bash
-vercel login
+Windows PowerShell:
+```powershell
+Copy-Item .env.example .env
 ```
 
-3. Na raiz do projeto, execute:
+## 2. Preencher `frontend/.env`
 
-```bash
-vercel
+```env
+VITE_API_URL=http://localhost:3000/api
+
+VITE_FIREBASE_API_KEY=sua_api_key
+VITE_FIREBASE_AUTH_DOMAIN=seu-projeto.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=seu-projeto
+VITE_FIREBASE_STORAGE_BUCKET=seu-projeto.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=000000000000
+VITE_FIREBASE_APP_ID=1:000000000000:web:xxxxxxxxxxxxxxxx
 ```
 
-4. Para produção:
+## 3. Subir frontend
 
 ```bash
-vercel --prod
+npm run dev
+```
+
+Abra a URL mostrada no terminal (geralmente `http://localhost:5173`).
+
+---
+
+## Fluxo completo do Google Auth (didático)
+
+### Visão narrativa
+1. Usuário clica em **Entrar com Google** no frontend.
+2. Firebase abre popup e autentica o usuário.
+3. Frontend recebe usuário autenticado e pede `idToken`.
+4. Frontend chama `POST /api/auth/google` com `Authorization: Bearer <idToken>`.
+5. Middleware do backend valida token com `admin.auth().verifyIdToken(...)`.
+6. Se válido, backend usa `uid/email/name/picture` do token.
+7. Backend faz `findOrCreate` no PostgreSQL (Sequelize).
+8. Backend retorna usuário persistido.
+9. Frontend exibe dados do usuário na tela.
+
+### Fluxo em diagrama (sequência)
+
+```mermaid
+sequenceDiagram
+    participant U as Usuário
+    participant F as Frontend (React)
+    participant FA as Firebase Auth
+    participant B as Backend (Express)
+    participant FAS as Firebase Admin SDK
+    participant DB as PostgreSQL
+
+    U->>F: Clica em Entrar com Google
+    F->>FA: signInWithPopup(GoogleProvider)
+    FA-->>F: Usuário autenticado + idToken
+    F->>B: POST /api/auth/google (Bearer idToken)
+    B->>FAS: verifyIdToken(idToken)
+    FAS-->>B: Token válido + claims (uid, email...)
+    B->>DB: findOrCreate / update usuário
+    DB-->>B: Usuário persistido
+    B-->>F: 200 + dados do usuário
+    F-->>U: Exibe perfil logado
 ```
 
 ---
 
-## Passo a passo para domínio personalizado (.tech)
+## Sequelize: define + migration (o que observar em aula)
 
-1. No projeto da Vercel, acesse **Settings > Domains**.
-2. Adicione:
-  - `seudominio.tech`
-  - `www.seudominio.tech`
-3. No provedor de DNS, crie/ajuste os registros:
-  - Tipo **A**, Host **@**, valor conforme exibido pela Vercel
-  - Tipo **CNAME**, Host **www**, valor conforme exibido pela Vercel
-4. Remova registros conflitantes de `www` (A/CNAME antigos).
-5. Aguarde propagação DNS e clique em **Refresh** na Vercel.
-6. Confirme acesso em: https://www.seudominio.tech/livros
+- O model usa `sequelize.define(...)` em `backend/models/user.js`.
+- A migration cria a estrutura da tabela em `backend/migrations/...-create-users.js`.
+- Esse padrão separa:
+  - **Model:** comportamento/validação da entidade no código.
+  - **Migration:** histórico versionado da estrutura do banco.
 
-## Boas práticas de publicação
+---
 
-- Usar domínio canônico único (`www` ou raiz).
-- Habilitar redirecionamento para evitar conteúdo duplicado.
-- Não versionar `.env` e arquivos sensíveis.
-- Validar links/rotas após cada deploy.
-- Monitorar logs de execução no painel da Vercel.
+## Scripts úteis
 
-## Próximos passos sugeridos
+### Backend
 
-- Persistir dados em banco (PostgreSQL/MySQL/MongoDB).
-- Adicionar validação de formulário no backend.
-- Implementar autenticação para área administrativa.
-- Criar testes de integração para rotas CRUD.
+```bash
+npm run dev              # sobe com nodemon
+npm run start            # sobe sem nodemon
+npm run db:migrate       # aplica migrations
+npm run db:migrate:undo  # desfaz última migration
+npm run db:create        # tenta criar DB com sequelize-cli
+```
 
-## Licença
+### Frontend
 
-Uso educacional e demonstrativo.
+```bash
+npm run dev
+npm run build
+npm run lint
+npm run preview
+```
+
+---
+
+## Checklist rápido de execução em sala
+
+1. Configurar Firebase (Google provider + app web + service account)
+2. Preencher `backend/.env`
+3. Preencher `frontend/.env`
+4. Criar DB no Postgres
+5. Rodar `npm run db:migrate` no backend
+6. Subir backend (`npm run dev`)
+7. Subir frontend (`npm run dev`)
+8. Testar login e validar registro na tabela `users`
+
+---
+
+## Troubleshooting (erros comuns)
+
+### Erro: `Token inválido`
+- Verifique se o frontend está enviando `Authorization: Bearer <idToken>`.
+- Verifique se `FIREBASE_PROJECT_ID` do backend é do mesmo projeto do frontend.
+
+### Erro de `private key`
+- Confirme que `FIREBASE_PRIVATE_KEY` está com `\n` e entre aspas.
+- Não remover `-----BEGIN PRIVATE KEY-----` e `-----END PRIVATE KEY-----`.
+
+### Erro de conexão com Postgres
+- Validar `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+- Confirmar serviço PostgreSQL ativo.
+
+### Migration não executa
+- Conferir se o banco `handlesbar_db` foi criado.
+- Rodar comando dentro da pasta `backend`.
+
+---
+
+## Segurança (boas práticas)
+
+- Nunca subir `.env` no Git.
+- Nunca compartilhar o JSON da Service Account em sala/grupo.
+- Em produção, restringir CORS e usar HTTPS.
+- Tratar logs sem expor token/chaves.
+
+---
+
+## Próximos passos sugeridos para evolução
+
+- Criar rota protegida de exemplo (`/api/private`).
+- Adicionar autorização por perfil (`student`, `teacher`, `admin`).
+- Criar refresh de sessão no frontend.
+- Adicionar testes automatizados (API e fluxo de login).
